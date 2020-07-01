@@ -1,0 +1,290 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+### BY - Yatharth Bhargava
+
+
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+
+
+* * *
+
+
+## Disclaimer 
+
+The income column we will be considering in the study would be the family income of the participants. Assuming that no Workplace gender discrimination exists and the sampling to be random, this income should have equal contributions from both the genders and hence as a whole the average difference between the family incomes of both male and female participants should be the 0.
+
+
+
+## Part 1: Data<br />
+#### Generalization
+
+
+GSS uses random sampling and also the sample size (i.e. around 57k) is quite big, hence we can say that the data can be generalized onto a larger population.
+
+
+#### Causality
+
+
+Random Assignment is used during an experimental setup, whereas in this case the survey is not done with an experimental setup in mind, hence we cannot say anything about random assignment for this survey.
+
+* * *
+
+## Part 2: Research question
+
+According to the US Department of Labor, women who worked full-time year-round earned 79 percent as much as their male counterparts.(https://www.bls.gov/opub/ted/2017/a-look-at-womens-education-and-earnings-since-the-1970s.htm)
+
+
+Using the GSS dataset can we verify that the average family income for the two genders is significantly different from each other?  
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+Let's first check if the sample is biased by gender or not.
+
+```{r}
+table(gss$sex)
+```
+
+No, the sample looks quite balanced.
+
+Let's look at the income distribution of the sample grouped by gender.
+```{r}
+ggplot(gss, aes(x = coninc, fill = sex)) + geom_histogram(bins = 20) + geom_vline(aes(xintercept = 25000)) + labs(x ="Income" , y = "Count", title = "Frequency Distribution for Different Income Intervals grouped by Gender")
+```
+
+
+We can see that the proportion of females is a bit higher on the left of the vertical line where the payscale is on the lower end.Whereas on the right of the vertical line the proportion of females to males is somewhat equalish. But let us just solidify this thought by using another plot.
+```{r}
+ggplot(gss, aes(x = coninc)) + facet_wrap(~sex) + geom_histogram(bins = 20) + geom_vline(aes(xintercept = 25000))+labs(x ="Income" , y = "Count", title = "Plots for Income Distribution By Gender")
+```
+
+
+We can see that a lot of women have incomes lying in the lower end of the payscale.
+
+
+### Summary Statistics
+
+Let's calculate the summary statistics by gender.
+
+
+```{r}
+gss %>%
+ group_by(sex) %>%
+ summarise(Max = max(coninc,na.rm=T) , Min = min(coninc,na.rm=T) , Avg = mean(coninc,na.rm=T), Median = median(coninc,na.rm=T))
+```
+
+Looking at the summary statistics it is very clear that women(in this dataset), on average earning lesser than their male counterparts.
+
+
+```{r}
+avg = gss%>%
+ group_by(sex) %>%
+ summarise(Average_income = mean(coninc, na.rm = T))
+avg
+```
+
+
+```{r}
+ggplot(avg, aes(x = sex, y = Average_income, fill= sex)) + geom_bar(stat = "identity") + labs(x ="Gender" , y = "Average Income", title = "Mean Income by Gender") 
+```
+
+
+Let's calculate the proportion of avg income of women to men.
+```{r}
+prop = 41020/ 48764
+prop
+```
+
+
+On average, women are earning <b>16%</b> lesser than men. 
+
+
+
+Let's look at how this trend was in the past.
+
+```{r}
+aiy = gss%>%
+ group_by(sex,year)%>%
+ summarise(Average_income = mean(coninc, na.rm=T))
+
+ggplot(aiy, aes(x = year, y = Average_income, color = sex))+geom_line() + labs(x ="Year" , y = "Average Income", title = "Average Income over the Years by Gender")
+```
+
+
+It seems that women incomes were always on lower end compared to men.But are these facts statistically significant for the given dataset, let's jump onto this question in the inference section.
+
+
+
+* * *
+
+## Part 4: Inference 
+
+
+
+### Hypothesis Testing
+
+Ho : There is nothing going on and there is no difference between the family incomes for both the genders.
+
+Ha : There is something going on and the difference between the family incomes of men and women is not just because of chance.
+
+
+
+### Conditions
+
+
+
+1. <b>Independence:</b>
+
+   <u>Within Groups</u> -    Since the data has been taken from the GSS dataset which we already know used 
+                      random sampling hence we can say that the sampled observations are
+                      independent.Also since the sampling is without replacement so no of
+                      participants should be lesser than 10% of the respective category.
+                      Using the first table in EDA we get :
+                      N(men) = 25146 and N(women) = 31915 is certainly lesser than 10% of both male 
+                      female count. <br />
+                      
+   <u>Between Groups</u> -   We are grouping on the basis of gender hence we can say that both the groups
+                      are independent of each other(i.e. if in fact the sampling method used was
+                      random, as stated by the GSS , then we can presume that we are not taking
+                      husband and wife pairs)
+
+                       
+2. <b>Sample size/skew :</b> Using the table above we can say that the sample size is > 30 and hence this condition is also met
+
+Hence we can say that the conditions for both Central Limit Theorem and Hypothesis Testing are met.
+
+### Methodology Used
+
+
+So we will be performing <b> Theoretical Hypothesis Testing </b> and verifying the results by the <b> Confidence Interval </b>. We are performing the <u>Theoretical</u> H.T because the conditions for inference are met.Also since we have one numerical variable(income) and one categorical(gender) so we will be performing a hypothesis test for comparing two means.
+
+
+#### Inference for comparing Two Independent Means :
+
+We will be calculating the avg income of both the female and male participants.
+
+<b>Ho</b> : $\mu_{men}$ = $\mu_{women}$
+
+<b>HA</b> : $\mu_{men}$ > $\mu_{women}$ <br />
+
+##### <b>Point Estimate</b>
+
+
+```{r}
+Point_Estimate = gss %>% group_by(sex) %>% summarise(X = mean(coninc, na.rm = T))
+Point_Estimate
+```
+
+So $x_{men}$ = 48764 & $x_{women}$ = 41020 in dollars.<br />
+Hence $x_{men}$ - $x_{women}$ = 7744 <br />
+Also since the the count of elements in each group is good enough, we will be using the <b>Normal Distribution</b>.<br />
+```{r}
+x_men = 48764
+x_women = 41020
+sd = gss %>% group_by(sex) %>% summarise(SD = sd(coninc,na.rm = T))
+sd
+```
+<br />
+
+
+##### <b>Standard Error</b>
+
+
+So $sd_{men}$ = 36916 & $sd_{women}$ = 34729 <br />
+```{r}
+sd_men = 36916.34
+sd_women = 34728.83
+n_men = 25146 
+n_women = 31915
+SE = sqrt(((sd_men)^2 /n_men  ) + ((sd_women)^2 / n_women))
+SE
+```
+<br />
+
+
+##### <b>Z Score</b>
+
+
+Assuming the Null Hypothesis to be true, the Z-Score can be calculated by <br />
+
+$Z = \frac{(x_{men}-x_{women}) - 0_{NH = True}}{StandardError}$
+
+```{r}
+Z_score = ((x_men - x_women)- 0)/ SE
+Z_score
+```
+<br />
+
+With this big of a z_score we can clearly say that the P-value $P(Z > 25.53 | \mu_{men} - \mu_{women} = 0 ) \approx 0$.<br />
+
+But for the sake of confirmation let's calculate it 
+```{r}
+pnorm(Z_score, lower.tail = F )
+```
+<br />
+
+With this low of a P-value we can say that(at 5% significance level) the Hypothesis Test provides strong evidence that this huge difference between male and female participant's income is not just due to chance and therefore we reject the <b>Null Hypothesis</b> and accept the <b>Alternate</b>.
+
+```{r}
+inference(y = coninc, x = sex, data = gss, statistic = "mean", type = "ht", null = 0, 
+          alternative = "greater", method = "theoretical")
+```
+
+
+##### <b>Confidence Interval</b>
+
+
+So, now we will be verifying the hypothesis using the confidence interval( at 95% c.i.).<br />
+```{r}
+CI = gss %>%  summarise(Left_limit = (x_men - x_women) - 1.96*SE, Right_limit = (x_men - x_women) + 1.96*SE)
+CI
+```
+<br/>
+
+
+So we can say that we are 95% confident that the actual difference between avg incomes of men and women lies between 7149.57 and 8338.45.Also we can interpret that men on average are earning 7149.57 - 8338.45 dollars more than and average women.Since the interval does not contain our Null Value hence we can that our Hypothesis Test and Confidence Interval agree.
+
+
+```{r}
+inference(y = coninc, x = sex, data = gss, statistic = "mean", type = "ci", 
+           method = "theoretical")
+```
+
+
+<br />
+
+
+### Conclusion
+<br />
+
+Since we get a P-value comparable to 0 and the Confidence Interval also agrees with our Hypothesis, hence we reject the Null Hypothesis that says that there is no difference between the family incomes of males and females. Our study suggests that there is actually some disparity. One of the reasons that might be the playing some role is <b>Workplace Gender Discrimination</b>. 
+But we cannot comment about the absoluteness of our conjecture(i.e. gender discrimination at workplace)and this difference might be due to other reasons that this study did not take into consideration.

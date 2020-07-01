@@ -1,0 +1,157 @@
+---
+title: "Statistical inference with the GSS data"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+
+## Setup
+
+### Load packages
+To conduct the "Final project", we will use the `dplyr` package for data exploration and `ggplot2` package for data visualization. The data can also be found in the companion package, `statsr`.
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+Let's load the GSS data-set for our analysis. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+* * *
+## Part 1: Data
+
+  For this study, we borrowed our data-set from the General Social Surveys (GSS) webpage (http://gss.norc.org). These surveys have been conducted since 1972 by the National Opinion Research Center (NORC) at the University of Chicago. the GSS monitor societal changes and study the growing complexity of American society. As of 2018, 32 surveys have been conducted with a total of 64,814 completed interviews, mainly face-to-face interview but also by phone and computers since 2002. Each survey from 1972 to 2004 was an independently drawn sample of English-speaking individuals 18 years of age or over, living in non-institutional arrangements within the United States (Spanish-speakers were added to the target population since 2006). This cumulative data-set merges all 32 surveys into a single file with each year or survey acting as a sub-file that greatly simplifies the use of the GSS for both trend analysis and pooling. 
+Our data-set for this project contains 57061 observations with 114 variables that were collected from 1972 through 2012. As the results, this is an observational study and is not an experimental so the result cannot imply the causation. We assume the respondents were selected randomely from the US population and therefore the sample can be generalized to the US population!
+ 
+ 
+* * *
+## Part 2: Research question
+  The objective of this study is to figure out "if the proportion of American respondents with higher education at the time of their interview has changed between 1972- the year that the first GSS was conducted- and 2012-the year that the final survey was conducted in our data-set. In the United States, higher education is considered any schooling beyond high school(reference: www.americanprofile.com).
+  Higher education has become an increasingly important avenue for career and salary advancement. It is also important to the national economics, both to the industry and as a trained and educated source to train the rest of workforce. Not to mention that those with the higher education are less likely to become unemployed (reference: www.en.m.wikipedia.org/wiki/Higher_education).  
+  Likewise, the GSS aim to gather data in order to monitor and explain trends and constants in attitudes, behaviors, and attributes; to examine the structure and functioning of the American society in general. Within this context, the purpose of this study is to have a better understanding of the changes in proportion of the population with higher-education degrees who have been interviewed for the General Social Surveys over a course of 40 years. In this study we compare the proportions of the American population with higher educations between two years of 1972 and 2012.  
+
+* * *
+
+## Part 3: Exploratory data analysis (EDA)
+
+To conduct our study, we will work with degree as the variable of interest. This variable is attributed to the highest degree the respondent has at the time of the interview. This variable has 5 levels: Lt High School, High School, Junior College, Bachelor, and Graduate. Let's first get a summary of our data. From the total of 57061 observations, the education level of 1010 of the respondents are not available (NA), so we disclude them from our analysis. 
+
+```{r gss}
+summary(gss$degree)
+summary(gss$sex)
+```
+
+In general, only 26.66% of the total respondents have an education level beyond high school, and the majority of GSS respondents have either High School diploma or less.
+
+```{r gss}
+hedu <- round(((3070+8002+3870)/56051)*100, 2)
+hedu
+```
+
+Since we want to study the proportions of the population with higher education, it is a safe approach to have a clear idea of the respondents' age distribution in our sample as well. This information is important, as those within 18-24 years of age may be a student at a higher education institute themselves or not to be able to get a degree beyond high school diploma age-wise if the respondent is 18 years old. 
+As shown below, only 10.4% of the total respondents in our data-set are within 18-24 years of age, and majority of the respondents are beyond 25 years of age. These results suggest that the majority of the GSS respondents are at the age range that makes it reasonable to compare them with respect to their level of education.
+
+```{r }
+summary.factor(gss$age)
+```
+
+
+```{r }
+ggplot(data = gss, aes(x = age)) +
+geom_histogram(binwidth = 15)
+```
+
+The distribution of degrees among respondents within 18-24 years of age is shown below as well. 
+
+```{r summary}
+newage <- gss %>%
+filter(age %in% (18:24))
+summary(newage$degree)
+summary(newage$sex)
+```
+
+* *
+Analysis of respondents distribution with respect to the region the interviews occurred, also shown that the respondents' graph is not uniform (equally distributed), and 66% of the respondents belong to the 4 regions of South Atlantic, East North Central, Middle Atlantic, and Pacific with a good number of higher education institutes in these regions.  
+
+```{r gss}
+summary(gss$region)
+qplot(x=region, data=gss)
+```
+Now, that we have some background information about our data-set, we can move forward to answer our objective question.
+
+
+* * *
+## Part 4: Inference
+Since the objective of this study is to find out "if the proportion of American respondents "with "higher education" at the time of the interviews has changed between two years of "1972" and "2012", we are conducting the following analyses that provide us with the values required for our inference and sample test statistics:
+
+```{r education-1972}
+edu1972 <- gss %>%
+filter(year=="1972", degree!="NA")
+summary(edu1972$degree)
+summary(edu1972$sex)
+```
+
+```{r proportion 1972}
+edu1972 <- round(((52+124+17)/1542)*100, 2)
+edu1972
+```
+So according to the above analysis, only 12.52% of the interviewees have higher education degrees during 1972 GSSurvey. 
+  n=193 total number of respondents with higher education degree in 1972 GSS
+  c=1542 total number of respondents in 1972 GSS, those with NA for the degree are discluded
+
+Now we conduct our analysis for the corresponding proportion for 2012 GSS.
+* * 
+```{r summary}
+edu2012 <- gss %>%
+filter(year=="2012", degree!="NA")
+summary(edu2012$degree)
+summary(edu2012$sex)
+```
+
+```{r proportion 1972}
+edu2012 <- round(((151+354+205)/1966)*100, 2)
+edu2012
+```
+Based on the above result, 36.11% of the respondents have higher education during 2012 GSSurvey. 
+n=710 (total number of respondents with higher education degree in 2012)
+c=1966 (total number of respondents in 2012 GSS, discluding those with "NA" for the degree)
+
+* * *
+For this study we will use Chi-squared (X-squared) statistics to investigate whether distributions of our categorical variable (here the propotions) differ from one another follows a hypothesized distribution. Our single categorical variable for this study is degree and we compare the two proportions obtained from the surveys that have been conducted in 1972 and 2012.
+first let's check the conditions:
+  the observations in our sample are independent 
+  the sampling method is simple random sampling
+  the sample size is sufficiently large (still less than 10% of the US population) and 
+  the variable under study is categorical (degree) and the number of sample observations (n) in each level of our categorical variable is at least 5. 
+
+Now, to answer the objective of our study we write out our hypothesis:
+the null hypothesis: there is NO change in "the proportion of American respondents with higher education between 1972 and 2012. 
+the alternative hypothesis: in fact there IS a change between the proportion of American respondents with higher education between 1972 and 2012 (our alternative hypothesis is two-sided).
+
+Null hypothesis: p(with higher education in 1972)=p(with higher education in 2012)
+Alternative hypothesis: p(with higher education in 1972)≠p(with higher education in 2012)
+
+```{r Infrence}
+prop.test(x=c(710, 193), n=c(1966, 1542))
+```
+
+According to our 2-sample test analysis results, there is, in fact, convincing evidence that the proportion of American respondents with higher education has changed between 1972 and 2012. Based on our obtained p-value (p-value < 2.2e-16), we reject the null hypothesis, and say the proportions of American respondents with higher education in year 1972 is NOT equal to the proportion of American respondents with higher education in year 2012.
+Also, we are 95% confident that the proportion of American respondents with higher education in 2012 is between 20.85% to 26.35% MORE than the proportion of American respondent with higher education in 1972. 
+
+
+* * *
+## Summary and Conclusion
+  In this project, we investigated the potential changes in the proportion of American respondents with higher education degrees who were interviewed for the GS Surveys between 1972 and 2012. As we discussed above, the results provide convincing evidence that the proportion of American respondents with higher education has changed between 1972 and 2012 and we observed a positive increase. 
+While it is beyond the scope of this project to study and discuss the probable underlying causes of this change, yet it is of great value and interest to study the potential playing factors such as any changes in the sampling method rather than an actual change in the education level of American population over these years, immigration effects, availability of long-distance learning as the results of emerging web era, availability of less-costly education to the broader and more diverse groups of the population, etc.
+The importance of this type of knowledge is with respect to the use of obtained results and observed trends, responses, and behavioral changes by the scholars and policy makers as an inference for the general population of this nation.
+
+
